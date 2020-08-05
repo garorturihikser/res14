@@ -1,1 +1,6 @@
 .vs/
+discord-bot/.vs/
+discord-bot/obj/
+discord-bot/Properties/
+discord-bot/bin/
+discord-bot/App.config
