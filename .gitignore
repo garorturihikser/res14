@@ -4,3 +4,4 @@ discord-bot/obj/
 discord-bot/Properties/
 discord-bot/bin/
 discord-bot/App.config
+discord-bot/Configurations/config.json
