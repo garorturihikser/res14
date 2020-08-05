@@ -15,8 +15,8 @@ namespace discord_bot
     class Program
     {
         private static DiscordClient discord;
-        private static string commandPrefix; // = "j!";
-        private static string token; // = "NzQwNTUxOTkyMjcwNzgyNTY1.XyqqyQ.qUwikMfZphzZ2_B51CdTKI324hM";
+        private static string commandPrefix;
+        private static string token;
         private static Dictionary<string, ICommand> commandDict = new Dictionary<string, ICommand>();
 
         static void Main(string[] args)
