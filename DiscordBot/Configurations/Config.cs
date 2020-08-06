@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace discord_bot.Configurations
+﻿namespace DiscordBot.Configurations
 {
     class Config
     {

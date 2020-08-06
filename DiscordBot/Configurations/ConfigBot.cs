@@ -1,26 +1,25 @@
-﻿using discord_bot.Commands;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using DiscordBot.Commands;
+using Newtonsoft.Json;
 
-namespace discord_bot.Configurations
+namespace DiscordBot.Configurations
 {
     static class ConfigBot
     {
         /// <summary>
         /// Returns the configurations for the bot
         /// </summary>
-        public static Tuple<string, string> GetConfigurations()
+        public static Config GetConfigurations()
         {
-            string wanted_path = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
-            System.IO.StreamReader r = new StreamReader($"{wanted_path}\\Configurations\\config.json");
+            string wantedPath = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
+            System.IO.StreamReader r = new StreamReader($"{wantedPath}\\Configurations\\config.json");
 
             string json = r.ReadToEnd();
             Config configs = JsonConvert.DeserializeObject<Config>(json);
 
-            return Tuple.Create(configs.Token, configs.Prefix);
+            return configs;
         }
 
         /// <summary>
