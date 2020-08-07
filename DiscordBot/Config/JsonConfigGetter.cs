@@ -5,18 +5,24 @@ namespace DiscordBot.Config
 {
     class JsonConfigGetter : IConfigGetter
     {
+        private string Path { get; set; }
+        public JsonConfigGetter(string path)
+        {
+            Path = path;
+        }
+        
         /// <summary>
         /// Returns the configurations for the bot
         /// </summary>
-        public DiscordBot.Config.Config GetConfig()
+        public Config GetConfig()
         {
-            string wantedPath = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())));
-            System.IO.StreamReader r = new StreamReader($"{wantedPath}\\Configurations\\config.json");
-
-            string json = r.ReadToEnd();
-            DiscordBot.Config.Config configs = JsonConvert.DeserializeObject<DiscordBot.Config.Config>(json);
-
-            return configs;
+            
+            using (StreamReader r = new StreamReader(Path))
+            {
+                string json = r.ReadToEnd();
+                var config = JsonConvert.DeserializeObject<Config>(json);
+                return config;
+            }
         }
         
 

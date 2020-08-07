@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DiscordBot.Commands;
 using DiscordBot.Config;
 
@@ -14,10 +15,10 @@ namespace DiscordBot
         static void Main(string[] args)
         {
             // fuck tom.... <3
-            var configGetter = new JsonConfigGetter();
+            var configGetter = new JsonConfigGetter($"config.json");
             var config = configGetter.GetConfig();
             var commandGetter = new CommandGetter(Commands, config.Prefix);
-            
+
             var bot = new Bot(commandGetter, config);
             
             bot.Run().ConfigureAwait(false).GetAwaiter().GetResult();

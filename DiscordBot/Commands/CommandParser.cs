@@ -8,7 +8,7 @@ namespace DiscordBot.Commands
         {
             string[] content = msg.Content.ToLower().Split();
             string curCommand = content[0];
-            curCommand = curCommand.Replace(commandPrefix, "");
+            content[0] = curCommand.Replace(commandPrefix, "");
             return content;
         }
     }

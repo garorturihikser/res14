@@ -53,11 +53,14 @@ namespace DiscordBot
         {
             if (!IsCommand(e.Message.Content))
                 return;
-            
+
             ICommand command = CommandGetter.Get(e.Message);
-            
+
             if (command is null)
+            {
+                await e.Message.RespondAsync("Command not recognized :(");
                 return;
+            }
             
             await command.Run(e.Message);
         }
