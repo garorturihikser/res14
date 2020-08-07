@@ -7,16 +7,24 @@ namespace DiscordBot.Commands
 {
     class CommandGetter: ICommandGetter
     {
-        public ICommand Get(DiscordMessage msg,
-            Dictionary<string, ICommand> commands,
+        public Dictionary<string, ICommand> Commands { get; set; }
+        public string CommandPrefix { get; }
+        
+        public CommandGetter(Dictionary<string, ICommand> commands,
             string commandPrefix)
         {
-            string curCommand = CommandParser.Parse(msg, commandPrefix)[0];
+            Commands = commands;
+            CommandPrefix = commandPrefix;
+        }
+        
+        public ICommand Get(DiscordMessage msg)
+        {
+            string curCommand = CommandParser.Parse(msg, CommandPrefix)[0];
             ICommand command = null;
             
             try
             {
-                command = commands[curCommand];
+                command = Commands[curCommand];
             }
             catch (KeyNotFoundException) {}
 

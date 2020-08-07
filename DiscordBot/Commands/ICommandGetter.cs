@@ -6,8 +6,6 @@ namespace DiscordBot.Commands
 {
     interface ICommandGetter
     {
-        ICommand Get(DiscordMessage msg,
-            Dictionary<string, ICommand> commands,
-            string commandPrefix);
+        ICommand Get(DiscordMessage msg);
     }
 }

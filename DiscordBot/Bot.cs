@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DiscordBot.Commands;
-using DiscordBot.Configurations;
 using DSharpPlus;
 using DSharpPlus.EventArgs;
 
@@ -10,53 +9,53 @@ namespace DiscordBot
 {
     class Bot
     {
-        private string Token { get; set; }
+        private string Token { get;}
         private string CommandPrefix { get; set; }
-        private Dictionary<string, ICommand> CommandDict { get; set; }
-        private ICommandGetter Getter { get; set; }
+        private ICommandGetter CommandGetter { get; set; }
+        private DiscordClient DiscordClient { get; }
         
-        /// <summary>
-        /// Receives messages and handles them
-        /// </summary>
-        /// <param name="args"></param>
-        /// <param name="configs"></param>
-        /// <returns></returns>
-        public async Task Run(string[] args, Config configs)
+        public Bot(ICommandGetter commandGetter, Config.Config config)
         {
-            Token = configs.Token;
-            CommandPrefix = configs.Prefix;
-
+            CommandGetter = commandGetter;
+            Token = config.Token;
+            CommandPrefix = config.Prefix;
+            
             // Instantiate the bot
-            var discord = new DiscordClient(new DiscordConfiguration
+            DiscordClient = new DiscordClient(new DiscordConfiguration
             {
                 Token = Token,
                 TokenType = TokenType.Bot
             });
-
+        }
+        
+        /// <summary>
+        /// Receives messages and handles them
+        /// </summary>
+        /// <returns></returns>
+        public async Task Run()
+        {
             // We received a message
-            discord.MessageCreated += MessageHandler;
+            DiscordClient.MessageCreated += MessageHandler;
             
-            await discord.ConnectAsync();
+            await DiscordClient.ConnectAsync();
             await Task.Delay(-1);
         }
 
         /// <summary>
         /// Checks whether a message is a command (starts with the command prefix)
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="commandPrefix"></param>
+        /// <param name="content"></param>
         /// <returns></returns>
-        private static bool IsCommand(MessageCreateEventArgs e, string commandPrefix)
-        {
-            return e.Message.Content.ToLower().StartsWith(commandPrefix);
-        }
+        private bool IsCommand(string content) =>
+            content.ToLower().StartsWith(CommandPrefix);
 
         private async Task MessageHandler(MessageCreateEventArgs e)
         {
-            if (!IsCommand(e, CommandPrefix))
+            if (!IsCommand(e.Message.Content))
                 return;
             
-            ICommand command = Getter.Get(e.Message, CommandDict, CommandPrefix);
+            ICommand command = CommandGetter.Get(e.Message);
+            
             if (command is null)
                 return;
             
