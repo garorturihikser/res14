@@ -17,9 +17,9 @@ namespace DiscordBot.Commands
             CommandPrefix = commandPrefix;
         }
         
-        public ICommand Get(DiscordMessage msg)
+        public ICommand Get(string content)
         {
-            string curCommand = CommandParser.Parse(msg, CommandPrefix)[0];
+            string curCommand = CommandParser.Parse(content, CommandPrefix)[0];
 
             ICommand command = null;
             

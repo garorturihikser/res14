@@ -3,7 +3,7 @@ using DSharpPlus.Entities;
 
 namespace DiscordBot.Commands
 {
-    class Ping: ICommand
+    class PingCommand: ICommand
     {
         public async Task Run(DiscordMessage msg)
         {

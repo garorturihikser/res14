@@ -6,6 +6,6 @@ namespace DiscordBot.Commands
 {
     interface ICommandGetter
     {
-        ICommand Get(DiscordMessage msg);
+        ICommand Get(string content);
     }
 }

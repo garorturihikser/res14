@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DiscordBot.Commands;
 using DSharpPlus;
+using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 
 namespace DiscordBot
@@ -36,6 +37,7 @@ namespace DiscordBot
         {
             // We received a message
             DiscordClient.MessageCreated += MessageHandler;
+            DiscordClient.MessageCreated += HandleTicTacToeScreen;
             
             await DiscordClient.ConnectAsync();
             await Task.Delay(-1);
@@ -54,7 +56,7 @@ namespace DiscordBot
             if (!IsCommand(e.Message.Content))
                 return;
 
-            ICommand command = CommandGetter.Get(e.Message);
+            ICommand command = CommandGetter.Get(e.Message.Content);
 
             if (command is null)
             {
@@ -63,6 +65,31 @@ namespace DiscordBot
             }
             
             await command.Run(e.Message);
+        }
+
+        public async Task HandleTicTacToeScreen(MessageCreateEventArgs e)
+        {
+            if (!IsTicTacToeScreen(e.Message.Content))
+                return;
+            
+            ICommand command = CommandGetter.Get("j!tic");
+
+            await command.Run(e.Message);
+        }
+        
+        public bool IsTicTacToeScreen(string content)
+        {
+            var ticTacToeScreenHeight = 3;
+            var ticTacToeScreenWidth = 3;
+            var numOfNewLines = 2;
+
+            foreach (char chr in content)
+            {
+                if (chr != '❌' && chr != '⭕' && chr != '⬜' && chr != '\n')
+                    return false;
+            }
+
+            return ticTacToeScreenHeight * ticTacToeScreenWidth + numOfNewLines == content.Length;
         }
     }
 }
