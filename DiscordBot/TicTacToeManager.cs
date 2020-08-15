@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using TicTacToe;
+using static TicTacToe.SquareState;
 
 namespace DiscordBot
 {
@@ -18,11 +19,10 @@ namespace DiscordBot
             var gameExists = GameExists(GetGame(msg));
             
             if (!gameExists)
-                Players.Add(TupleFromMessage(msg), new TicTacToeGame('o'));
+                Players.Add(TupleFromMessage(msg), new TicTacToeGame(O));
 
             return !gameExists;
         }
-
 
         public bool RemoveGame(DiscordMessage msg)
         {
@@ -33,8 +33,7 @@ namespace DiscordBot
 
             return gameExists;
         }
-            
-
+        
         public TicTacToeGame GetGame(DiscordMessage msg)
         {
             Players.TryGetValue(TupleFromMessage(msg), out var game);

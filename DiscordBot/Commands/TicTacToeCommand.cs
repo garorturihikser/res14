@@ -1,12 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using DSharpPlus.Entities;
 using Microsoft.CSharp.RuntimeBinder;
-using Microsoft.VisualBasic;
 using TicTacToe;
+using static TicTacToe.SquareState;
+using static TicTacToe.GameState;
 
 namespace DiscordBot.Commands
 {
@@ -14,16 +13,18 @@ namespace DiscordBot.Commands
     {
         private TicTacToeManager Manager { get; set; }
 
-        private Dictionary<char, char> ScreenTranslator = new Dictionary<char, char>
+        private Dictionary<char, SquareState> translationDict = new Dictionary<char, SquareState>
         {
-            {'❌', 'x'},
-            {'⭕', 'o'},
-            {'⬜', 'n'},
-            {'x', '❌'}, 
-            {'o', '⭕'}, 
-            {'n', '⬜'}
+            {'❌', X},
+            {'⭕', O},
+            {'⬜', Empty},
         };
-        
+
+        private string InvalidText = "Invalid screen";
+        private string WinText = "You won!!";
+        private string LoseText = "You lost :(";
+        private string DrawText = "Game drawn";
+
         public TicTacToeCommand(TicTacToeManager manager)
         {
             Manager = manager;
@@ -33,161 +34,158 @@ namespace DiscordBot.Commands
         {
             var splitMsg = CommandParser.Split(msg.Content);
 
-            if (splitMsg[1] == "start")
+            switch (splitMsg[1])
             {
-                await msg.RespondAsync(StartText(msg));
-            }
+                case "start":
+                    await msg.RespondAsync(StartText(msg));
+                    break;
 
-            else if (splitMsg[1] == "stop")
-            {
-                await msg.RespondAsync(StopText(msg));
-            }
+                case "stop":
+                    await msg.RespondAsync(StopText(msg));
+                    break;
 
-            else
-            {
-                var game = Manager.GetGame(msg);
+                case "help":
+                    await msg.RespondAsync(HelpText());
+                    break;
 
-                if (Manager.GameExists(game))
+                default:
                 {
-                    await msg.RespondAsync(ScreenText(msg, game));
+                    var game = Manager.GetGame(msg);
+
+                    if (Manager.GameExists(game))
+                    {
+                        IEnumerable<string> textIterator = TurnText(msg, game);
+
+                        foreach (string text in textIterator)
+                        {
+                            await msg.RespondAsync(text);
+                        }
+                    }
+
+                    break;
                 }
             }
-            
         }
-        
+
+        private string HelpText() =>
+            "Each turn the bot will send a tic tac toe screen." +
+            " Place an :x: wherever you want to play and send the screen." +
+            "\nMake sure to avoid spaces and other unnecessary SquareStateacters." +
+            "\nFirst to complete a row, column, or diagonal wins.";
+
+        /// <summary>
+        /// The correct text to send after the user tried to start the game
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
         private string StartText(DiscordMessage msg)
         {
             var started = Manager.AddGame(msg);
-            
+
+            // Game failed to start
             if (!started)
                 return "Game already taking place";
 
+            // Game started successfully
             else
             {
                 TicTacToeGame game = Manager.GetGame(msg);
-                char[,] screen = game.Screen;
-                var translatedScreen = TranslateScreen(screen);
+                char[,] screen = game.ScreenToMatrix(translationDict);
 
-                return ScreenToString(translatedScreen);
+                return MatrixToString(screen);
             }
-            
         }
 
+        /// <summary>
+        /// The correct text to send after the user tried to stop the game
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
         private string StopText(DiscordMessage msg)
         {
             var stopped = Manager.RemoveGame(msg);
             return !stopped ? "No game currently taking place" : "Game stopped";
         }
-        
-        private string ScreenText(DiscordMessage msg, TicTacToeGame game)
+
+        /// <summary>
+        /// The correct text to send after the user sends a new screen (i.e. makes a move)
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="game"></param>
+        /// <returns></returns>
+        private IEnumerable<string> TurnText(DiscordMessage msg, TicTacToeGame game)
         {
-            char[,] recievedScreen = StringToScreen(msg.Content);
-                    
-            char[,] screen = TranslateScreen(recievedScreen);
-            Dictionary<char, char> differences = CompareScreens(screen, game.Screen);
+            // Compare the new screen to the old screen
+            // In order to see if any non-valid changes were made
+            char[,] receivedScreen = StringToMatrix(msg.Content);
 
-            if (differences.Count != 1 || differences.ContainsKey('o') || differences.Values.Any(x => x != 'n'))
-                return "Invalid Screen";
-            
-            else
-            {
-                game.UpdateScreen(screen);
-                game.Move();
-            }
-            
-            char[,] finalScreen = TranslateScreen(game.Screen);
-            var finalString = ScreenToString(finalScreen);
-            
-            if (game.IsWin('x'))
-            {
-                Manager.RemoveGame(msg);
-                return "You won!!";
-            }
+            GameState gameState = game.DoTurn(receivedScreen, translationDict);
+            char[,] screenMatrix = game.ScreenToMatrix(translationDict);
 
-            if (game.IsWin('o'))
-            {
-                Manager.RemoveGame(msg);
-                return finalString + "\nYou lost :(";
-            }
+            string finalScreenString = MatrixToString(screenMatrix);
 
-            if (game.IsDraw())
+            switch (gameState)
             {
-                Manager.RemoveGame(msg);
-                return finalString + "\nGame drawn";
+                case InvalidScreen:
+                    yield return InvalidText;
+                    break;
+
+                // In case the player won
+                case XWin:
+                    Manager.RemoveGame(msg);
+                    yield return WinText;
+                    break;
+
+                // In case the computer won
+                case OWin:
+                    Manager.RemoveGame(msg);
+                    yield return finalScreenString;
+                    yield return LoseText;
+                    break;
+                
+                case Draw:
+                    Manager.RemoveGame(msg);
+                    yield return DrawText;
+                    break;
+                
+                // In case the game is continuing
+                default:
+                    yield return finalScreenString;
+                    break;
             }
-            
-            return finalString;
         }
-        
-        private Dictionary<char, char> CompareScreens(char[,] newScreen, char[,] oldScreen)
-        {
-            var differences = new Dictionary<char, char>();
 
-            for (int i = 0; i < newScreen.GetLength(0); i++)
-            {
-                for (int j = 0; j < oldScreen.GetLength(1); j++)
-                {
-                    char newChar = newScreen[i, j];
-                    char oldChar = oldScreen[i, j];
-                    if (newChar != oldChar)
-                        differences.Add(newChar, oldChar);
-                }
-            }
-
-            return differences;
-        }
-        
-        private char[,] TranslateScreen(char[,] screen)
-        {
-            char[,] retScreen = new char[screen.GetLength(0), screen.GetLength(1)];
-
-            for (int i = 0; i < screen.GetLength(0); i++)
-            {
-                for (int j = 0; j < screen.GetLength(1); j++)
-                {
-                    retScreen[i, j] = ScreenTranslator[screen[i, j]];
-                }
-            }
-
-            return retScreen;
-        }
-        
-        private string ScreenToString(char[,] screen)
+        private string MatrixToString(char[,] matrix)
         {
             var str = "";
-            
-            for (int i = 0; i < screen.GetLength(0); i++)
-            {
-                for (int j = 0; j < screen.GetLength(1); j++)
-                {
-                    str += screen[i, j];
-                }
+            int counter = 0;
 
-                str += "\n";
+            foreach (char chr in matrix)
+            {
+                str += chr;
+                counter++;
+                
+                if (counter % 3 == 0)
+                    str += "\n";
             }
 
             return str;
         }
 
-        private char[,] StringToScreen(string str)
+        private char[,] StringToMatrix(string str)
         {
             str = str.Replace("\n", "");
-            
-            var screen = new char[3, 3];
-            
-            for (int i = 0; i < screen.GetLength(0); i++)
+
+            var matrix = new char[3, 3];
+            for (int i = 0; i < matrix.GetLength(0); i++)
             {
-                for (int j = 0; j < screen.GetLength(1); j++)
+                for (int j = 0; j < matrix.GetLength(1); j++)
                 {
-                    var chr = str[i * 3 + j];
-                    
-                    screen[i, j] = chr;
-                    //if (chr != '\n')
-                        //screen[i, j] = str[i + j];
+                    matrix[i, j] = str[i * 3 + j];
                 }
             }
 
-            return screen;
+            return matrix;
         }
     }
 }
