@@ -56,12 +56,12 @@ namespace TicTacToe
                     return OWin;
 
                 default:
-                    if (IsDraw())
+                    if (draw)
                         return Draw;
                     break;
             }
             
-            return draw ? Draw : GoingOn;
+            return GoingOn;
         }
     
         /// <summary>

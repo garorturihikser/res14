@@ -70,7 +70,7 @@ namespace DiscordBot.Commands
         private string HelpText() =>
             "Each turn the bot will send a tic tac toe screen." +
             " Place an :x: wherever you want to play and send the screen." +
-            "\nMake sure to avoid spaces and other unnecessary SquareStateacters." +
+            "\nMake sure to avoid spaces and other unnecessary characters." +
             "\nFirst to complete a row, column, or diagonal wins.";
 
         /// <summary>
