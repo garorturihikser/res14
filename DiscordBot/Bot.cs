@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using DiscordBot.Commands;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot
 {
@@ -12,12 +14,12 @@ namespace DiscordBot
     {
         private string Token { get;}
         private string CommandPrefix { get; set; }
-        private ICommandGetter CommandGetter { get; set; }
+        private ICommandProvider CommandProvider { get; set; }
         private DiscordClient DiscordClient { get; }
         
-        public Bot(ICommandGetter commandGetter, Config.Config config)
+        public Bot(ICommandProvider commandProvider, Config.Config config)
         {
-            CommandGetter = commandGetter;
+            CommandProvider = commandProvider;
             Token = config.Token;
             CommandPrefix = config.Prefix;
             
@@ -29,6 +31,7 @@ namespace DiscordBot
             });
         }
         
+        
         /// <summary>
         /// Receives messages and handles them
         /// </summary>
@@ -36,9 +39,9 @@ namespace DiscordBot
         public async Task Run()
         {
             // We received a message
-            DiscordClient.MessageCreated += MessageHandler;
-            DiscordClient.MessageCreated += HandleTicTacToeScreen;
             
+            DiscordClient.MessageCreated += MessageHandler;
+
             await DiscordClient.ConnectAsync();
             await Task.Delay(-1);
         }
@@ -53,43 +56,24 @@ namespace DiscordBot
 
         private async Task MessageHandler(MessageCreateEventArgs e)
         {
-            if (!IsCommand(e.Message.Content))
-                return;
-
-            ICommand command = CommandGetter.Get(e.Message.Content);
-
+            ICommand command = CommandProvider.ProvideCommand(e.Message.Content);
+            
             if (command is null)
             {
-                await e.Message.RespondAsync("Command not recognized :(");
-                return;
+                foreach (var comm in CommandProvider.Commands.Values)
+                {
+                    await comm.OnMessage(e);
+                }
             }
             
-            await command.Run(e.Message);
-        }
-
-        public async Task HandleTicTacToeScreen(MessageCreateEventArgs e)
-        {
-            if (!IsTicTacToeScreen(e.Message.Content))
-                return;
-            
-            ICommand command = CommandGetter.Get("j!tic");
-
-            await command.Run(e.Message);
-        }
-        
-        public bool IsTicTacToeScreen(string content)
-        {
-            var ticTacToeScreenHeight = 3;
-            var ticTacToeScreenWidth = 3;
-            var numOfNewLines = 2;
-
-            foreach (char chr in content)
+            if (command is null)
             {
-                if (chr != '❌' && chr != '⭕' && chr != '⬜' && chr != '\n')
-                    return false;
+                if (IsCommand(e.Message.Content))
+                    await e.Message.RespondAsync("Command not recognized :(");
+                return;
             }
-
-            return ticTacToeScreenHeight * ticTacToeScreenWidth + numOfNewLines == content.Length;
+            
+            await command.Run(e.Message);
         }
     }
 }

@@ -9,33 +9,28 @@ using static TicTacToe.GameState;
 
 namespace TicTacToe
 {
-    public class TicTacToeGame
+    public class TicTacToeGame<T>
     {
         public SquareState[,] Screen { get; set; }
-        // public SquareState MySign { get; set; }
-        // public bool IsMyTurn { get; set; }
+        public Dictionary<T, SquareState> TranslationDict { get; set; }
 
-        public TicTacToeGame(SquareState mySign)
+        public TicTacToeGame(Dictionary<T, SquareState> translationDict)
         {
             Screen = new SquareState[,]{{Empty, Empty, Empty}, 
                 {Empty, Empty, Empty},
                 {Empty, Empty, Empty}};
-            
-            // MySign = mySign;
-            
-            // IsMyTurn = MySign == O; - If I ever want to add O as a playable sign
+            TranslationDict = translationDict;
         }
         
         /// <summary>
         /// Does one game turn
         /// </summary>
         /// <param name="screenMatrix">The user inputted screen</param>
-        /// <param name="translationDict">A dictionary to translate the inputted screen into a game screen</param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public GameState DoTurn<T>(T[,] screenMatrix, Dictionary<T, SquareState> translationDict)
+        public GameState DoTurn(T[,] screenMatrix)
         {
-            SquareState[,] screen = MatrixToScreen(screenMatrix, translationDict);
+            SquareState[,] screen = MatrixToScreen(screenMatrix);
 
             if (!IsScreenValid(screen, Screen)) 
                 return InvalidScreen;
@@ -47,7 +42,7 @@ namespace TicTacToe
             if (!draw)
                 Move();
 
-            switch (WinningSign())
+            switch (GetWinningSign())
             {
                 case X:
                     return XWin;
@@ -135,7 +130,7 @@ namespace TicTacToe
         /// Returns which sign won the game
         /// </summary>
         /// <returns>X, O, or Empty if no one won</returns>
-        private SquareState WinningSign()
+        private SquareState GetWinningSign()
         {
             foreach (var state in new[] {X, O})
             {
@@ -224,7 +219,7 @@ namespace TicTacToe
             return differences;
         }
         
-        public T[,] ScreenToMatrix<T>(Dictionary<T, SquareState> translationDict)
+        public T[,] ScreenToMatrix()
         {
             var screen = new T[Screen.GetLength(0), Screen.GetLength(1)];
 
@@ -232,14 +227,14 @@ namespace TicTacToe
             {
                 for (int j = 0; j < Screen.GetLength(1); j++)
                 {
-                    screen[i, j] = translationDict.Keys.Where(x => translationDict[x] == Screen[i, j]).ToArray()[0];
+                    screen[i, j] = TranslationDict.Keys.Where(x => TranslationDict[x] == Screen[i, j]).ToArray()[0];
                 }
             }
 
             return screen;
         }
         
-        private SquareState[,] MatrixToScreen<T>(T[,] screenMatrix, Dictionary<T, SquareState> translationDict)
+        private SquareState[,] MatrixToScreen(T[,] screenMatrix)
         {
             var screen = new SquareState[screenMatrix.GetLength(0), screenMatrix.GetLength(1)];
 
@@ -247,7 +242,7 @@ namespace TicTacToe
             {
                 for (int j = 0; j < screenMatrix.GetLength(1); j++)
                 {
-                    screen[i, j] = translationDict[screenMatrix[i, j]];
+                    screen[i, j] = TranslationDict[screenMatrix[i, j]];
                 }
             }
 

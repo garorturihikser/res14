@@ -16,7 +16,7 @@ namespace DiscordBot.Commands
             return content.ToLower().Split();
         }
 
-        public static string RemovePrefix(string content, string commandPrefix)
+        private static string RemovePrefix(string content, string commandPrefix)
         {
             content = content.Replace(commandPrefix, "");
             return content;
