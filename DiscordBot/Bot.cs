@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DiscordBot.Backends;
 using DiscordBot.Commands;
 using DSharpPlus;
@@ -10,7 +11,7 @@ namespace DiscordBot
         private string Token { get;}
         private string CommandPrefix { get; set; }
         private ICommandProvider CommandProvider { get; set; }
-        private DiscordClient _discordClient;
+        public DiscordClient DiscordClient { get; }
         
         public Bot(ICommandProvider commandProvider, Config.Config config)
         {
@@ -19,7 +20,7 @@ namespace DiscordBot
             CommandPrefix = config.Prefix;
             
             // Instantiate the bot
-            _discordClient = new DiscordClient(new DiscordConfiguration
+            DiscordClient = new DiscordClient(new DiscordConfiguration
             {
                 Token = Token,
                 TokenType = TokenType.Bot

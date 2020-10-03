@@ -1,31 +1,21 @@
+using System;
 using System.Threading.Tasks;
-using DSharpPlus;
 using DSharpPlus.EventArgs;
 
 namespace DiscordBot.Backends.Discord
 {
     class DiscordBackend: IBackend<MessageCreateEventArgs>
     {
-        readonly DiscordClient _client;
-        
         readonly Bot<MessageCreateEventArgs> _bot;
 
-        public DiscordBackend(string token, Bot<MessageCreateEventArgs> bot)
-        {
-            _client = new DiscordClient(new DiscordConfiguration
-            {
-                Token = token,
-                TokenType = TokenType.Bot
-            });
-
+        public DiscordBackend(Bot<MessageCreateEventArgs> bot) =>
             _bot = bot;
-        }
 
         public async Task Run()
         {
-            _client.MessageCreated += MessageHandler;
+            _bot.DiscordClient.MessageCreated += MessageHandler;
 
-            await _client.ConnectAsync();
+            await _bot.DiscordClient.ConnectAsync();
             await Task.Delay(-1);
         }
 
