@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using DiscordBot.Backends;
 using DiscordBot.Commands;
 using DSharpPlus;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot
 {
-    class Bot
+    class Bot<T>
     {
         private string Token { get;}
         private string CommandPrefix { get; set; }
         private ICommandProvider CommandProvider { get; set; }
-        private DiscordClient DiscordClient { get; }
+        private DiscordClient _discordClient;
         
         public Bot(ICommandProvider commandProvider, Config.Config config)
         {
@@ -24,7 +19,7 @@ namespace DiscordBot
             CommandPrefix = config.Prefix;
             
             // Instantiate the bot
-            DiscordClient = new DiscordClient(new DiscordConfiguration
+            _discordClient = new DiscordClient(new DiscordConfiguration
             {
                 Token = Token,
                 TokenType = TokenType.Bot
@@ -36,14 +31,9 @@ namespace DiscordBot
         /// Receives messages and handles them
         /// </summary>
         /// <returns></returns>
-        public async Task Run()
+        public async Task Run(IBackend<T> backend)
         {
-            // We received a message
-            
-            DiscordClient.MessageCreated += MessageHandler;
-
-            await DiscordClient.ConnectAsync();
-            await Task.Delay(-1);
+            await backend.Run();
         }
 
         /// <summary>
@@ -53,10 +43,10 @@ namespace DiscordBot
         /// <returns></returns>
         private bool IsCommand(string content) =>
             content.ToLower().StartsWith(CommandPrefix);
-
-        private async Task MessageHandler(MessageCreateEventArgs e)
+ 
+        public async Task MessageHandler(IContext e)
         {
-            ICommand command = CommandProvider.ProvideCommand(e.Message.Content);
+            ICommand command = CommandProvider.ProvideCommand(e.ExtractMessageContent());
             
             if (command is null)
             {
@@ -68,12 +58,12 @@ namespace DiscordBot
             
             if (command is null)
             {
-                if (IsCommand(e.Message.Content))
-                    await e.Message.RespondAsync("Command not recognized :(");
+                if (IsCommand(e.ExtractMessageContent()))
+                    await e.Respond("Command not recognized :(");
                 return;
             }
             
-            await command.Run(e.Message);
+            await command.Run(e);
         }
     }
 }

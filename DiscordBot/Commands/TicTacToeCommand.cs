@@ -1,56 +1,51 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
-using Microsoft.CSharp.RuntimeBinder;
-using Microsoft.Extensions.DependencyInjection;
+using DiscordBot.Backends;
 using TicTacToe;
 
 namespace DiscordBot.Commands
 {
-    public class TicTacToeCommand : ICommand
+    public class TicTacToeCommand: ICommand
     {
         private TicTacToeManager<char> Manager { get; set; }
-        
-        private Dictionary<char, SquareState> translationDict = new Dictionary<char, SquareState>
+        private Dictionary<char, SquareState> TranslationDict;
+
+        private Dictionary<GameState, string> _responses = new Dictionary<GameState, string>()
         {
-            {'❌', SquareState.X},
-            {'⭕', SquareState.O},
-            {'⬜', SquareState.Empty},
+            {GameState.InvalidScreen, "Invalid screen"},
+            {GameState.XWin, "You won!!"},
+            {GameState.OWin, "You lost :("},
+            {GameState.Draw, "Game drawn"}
         };
 
-        private string InvalidText = "Invalid screen";
-        private string WinText = "You won!!";
-        private string LoseText = "You lost :(";
-        private string DrawText = "Game drawn";
-
-        public TicTacToeCommand(TicTacToeManager<char> manager)
+        public TicTacToeCommand(TicTacToeManager<char> manager, Dictionary<char, SquareState> translationDict)
         {
             Manager = manager;
+            TranslationDict = translationDict;
         }
 
-        private async Task HandleTicTacToeScreen(DiscordMessage msg)
+        private async Task HandleTicTacToeScreen(IContext e)
         {
-            var game = Manager.GetGame(msg);
+            var game = Manager.GetGame(e);
 
             if (Manager.GameExists(game))
             {
-                await RunTurnSubcommand(msg, game);
+                await RunTurnSubcommand(e, game);
             } 
         }
 
-        public async Task OnMessage(MessageCreateEventArgs e)
+        public async Task OnMessage(IContext e)
         {
-            if (IsTicTacToeScreen(e.Message.Content))
+            if (IsTicTacToeScreen(e.ExtractMessageContent()))
             {
-                await HandleTicTacToeScreen(e.Message);
+                await HandleTicTacToeScreen(e);
             }
         }
 
-        public async Task Run(DiscordMessage msg)
+        public async Task Run(IContext msg)
         {
-            var splitMsg = CommandParser.Split(msg.Content);
+            var splitMsg = CommandParser.Split(msg.ExtractMessageContent());
 
             switch (splitMsg[1])
             {
@@ -68,14 +63,14 @@ namespace DiscordBot.Commands
             }
         }
 
-        private async Task HelpText(DiscordMessage msg)
+        private async Task HelpText(IContext msg)
         {
             var text = "Each turn the bot will send a tic tac toe screen." +
                        " Place an :x: wherever you want to play and send the screen." +
                        "\nMake sure to avoid spaces and other unnecessary characters." +
                        "\nFirst to complete a row, column, or diagonal wins.";
 
-            await msg.RespondAsync(text);
+            await msg.Respond(text);
         }
 
         /// <summary>
@@ -83,9 +78,9 @@ namespace DiscordBot.Commands
         /// </summary>
         /// <param name="msg"></param>
         /// <returns></returns>
-        private async Task RunStartSubcommand(DiscordMessage msg)
+        private async Task RunStartSubcommand(IContext msg)
         {
-            var started = Manager.AddGame(msg, translationDict);
+            var started = Manager.AddGame(msg, TranslationDict);
             var text = "";
             
             // Game failed to start
@@ -101,7 +96,7 @@ namespace DiscordBot.Commands
                 text = MatrixToString(screen);
             }
             
-            await msg.RespondAsync(text);
+            await msg.Respond(text);
         }
         
         /// <summary>
@@ -109,12 +104,12 @@ namespace DiscordBot.Commands
         /// </summary>
         /// <param name="msg"></param>
         /// <returns></returns>
-        private async Task RunStopSubcommand(DiscordMessage msg)
+        private async Task RunStopSubcommand(IContext msg)
         {
             var stopped = Manager.RemoveGame(msg);
             var text = !stopped ? "No game currently taking place" : "Game stopped";
 
-            await msg.RespondAsync(text);
+            await msg.Respond(text);
         }
 
         /// <summary>
@@ -123,11 +118,11 @@ namespace DiscordBot.Commands
         /// <param name="msg"></param>
         /// <param name="game"></param>
         /// <returns></returns>
-        private async Task RunTurnSubcommand(DiscordMessage msg, TicTacToeGame<char> game)
+        private async Task RunTurnSubcommand(IContext msg, TicTacToeGame<char> game)
         {
             // Compare the new screen to the old screen
             // In order to see if any non-valid changes were made
-            char[,] receivedScreen = StringToMatrix(msg.Content);
+            char[,] receivedScreen = StringToMatrix(msg.ExtractMessageContent());
 
             GameState gameState = game.DoTurn(receivedScreen);
             char[,] screenMatrix = game.ScreenToMatrix();
@@ -136,33 +131,28 @@ namespace DiscordBot.Commands
 
             switch (gameState)
             {
-                case GameState.InvalidScreen:
-                    await msg.RespondAsync(InvalidText);
-                    break;
-
+                // In case the game is continuing
+                case GameState.GoingOn:
+                    await msg.Respond(finalScreenString);
+                    return;
+                
                 // In case the player won
                 case GameState.XWin:
                     Manager.RemoveGame(msg);
-                    await msg.RespondAsync(WinText);
                     break;
 
                 // In case the computer won
                 case GameState.OWin:
                     Manager.RemoveGame(msg);
-                    await msg.RespondAsync(finalScreenString);
-                    await msg.RespondAsync(LoseText);
+                    await msg.Respond(finalScreenString);
                     break;
                 
                 case GameState.Draw:
                     Manager.RemoveGame(msg);
-                    await msg.RespondAsync(DrawText);
-                    break;
-                
-                // In case the game is continuing
-                default:
-                    await msg.RespondAsync(finalScreenString);
                     break;
             }
+
+            await msg.Respond(_responses[gameState]);
         }
 
         private string MatrixToString(char[,] matrix)
@@ -203,14 +193,14 @@ namespace DiscordBot.Commands
             var ticTacToeScreenHeight = 3;
             var ticTacToeScreenWidth = 3;
             var numOfNewLines = 2;
-
+            var squareNum = ticTacToeScreenHeight * ticTacToeScreenWidth;
             foreach (char chr in content)
             {
-                if (translationDict.Keys.All(x => chr != x && chr != '\n'))
+                if (TranslationDict.Keys.All(x => chr != x && chr != '\n'))
                     return false;
             }
 
-            return ticTacToeScreenHeight * ticTacToeScreenWidth + numOfNewLines == content.Length;
+            return squareNum + numOfNewLines == content.Length || squareNum == content.Length;
         }
     }
 }

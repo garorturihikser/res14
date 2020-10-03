@@ -1,6 +1,4 @@
-﻿using DSharpPlus.Entities;
-
-namespace DiscordBot.Commands
+﻿namespace DiscordBot.Commands
 {
     static class CommandParser
     {
