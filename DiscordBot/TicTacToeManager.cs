@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DiscordBot.Backends;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using TicTacToe;
@@ -13,7 +14,7 @@ namespace DiscordBot
         public TicTacToeManager() =>
             Players = new Dictionary<Tuple<DiscordUser, DiscordChannel>, TicTacToeGame<T>>();
 
-        public bool AddGame(DiscordMessage msg, Dictionary<T, SquareState> translationDict)
+        public bool AddGame(IContext msg, Dictionary<T, SquareState> translationDict)
         {
             var gameExists = GameExists(GetGame(msg));
             
@@ -23,7 +24,7 @@ namespace DiscordBot
             return !gameExists;
         }
 
-        public bool RemoveGame(DiscordMessage msg)
+        public bool RemoveGame(IContext msg)
         {
             var gameExists = GameExists(GetGame(msg));
             
@@ -33,7 +34,7 @@ namespace DiscordBot
             return gameExists;
         }
         
-        public TicTacToeGame<T> GetGame(DiscordMessage msg)
+        public TicTacToeGame<T> GetGame(IContext msg)
         {
             Players.TryGetValue(TupleFromMessage(msg), out var game);
             return game;
@@ -42,7 +43,7 @@ namespace DiscordBot
         public bool GameExists(TicTacToeGame<T> game) =>
             game != null;
         
-        private Tuple<DiscordUser, DiscordChannel> TupleFromMessage(DiscordMessage msg) =>
-            new Tuple<DiscordUser, DiscordChannel>(msg.Author, msg.Channel);
+        private Tuple<DiscordUser, DiscordChannel> TupleFromMessage(IContext msg) =>
+            new Tuple<DiscordUser, DiscordChannel>(msg.GetSender(), msg.GetChannel());
     }
 }
