@@ -14,6 +14,7 @@ namespace DiscordBot
     {
         static void Main(string[] args)
         {
+            // Discord v CLI
             var settings = new DiscordSettings();
 
             var CLITranslationDict = new Dictionary<char, SquareState>
