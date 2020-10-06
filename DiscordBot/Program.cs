@@ -17,13 +17,6 @@ namespace DiscordBot
             // Discord v CLI
             var settings = new DiscordSettings();
 
-            var CLITranslationDict = new Dictionary<char, SquareState>
-            {
-                {'x', SquareState.X},
-                {'o', SquareState.O},
-                {'-', SquareState.Empty}
-            };
-            
             var ticTacToeCommand =
                 new botCommands.TicTacToeCommand(new TicTacToeManager<char>(), settings.TranslationDict);
             
