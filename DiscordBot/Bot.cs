@@ -1,40 +1,32 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DiscordBot.Backends;
-using DiscordBot.Commands;
+using DiscordBot.BackendRelated;
+using DiscordBot.CommandRelated;
+using DiscordBot.CommandRelated.Commands;
 using DSharpPlus;
 
 namespace DiscordBot
 {
     class Bot<T>
     {
-        private string Token { get;}
         private string CommandPrefix { get; set; }
         private ICommandProvider CommandProvider { get; set; }
-        public DiscordClient DiscordClient { get; }
+        public IBackend<T> Backend { get; set; }
         
-        public Bot(ICommandProvider commandProvider, Config.Config config)
+        public Bot(ICommandProvider commandProvider, IBackend<T> backend, Config.DiscordConfig discordConfig)
         {
             CommandProvider = commandProvider;
-            Token = config.Token;
-            CommandPrefix = config.Prefix;
-            
-            // Instantiate the bot
-            DiscordClient = new DiscordClient(new DiscordConfiguration
-            {
-                Token = Token,
-                TokenType = TokenType.Bot
-            });
+            Backend = backend;
+            CommandPrefix = discordConfig.Prefix;
         }
-        
-        
+
         /// <summary>
         /// Receives messages and handles them
         /// </summary>
         /// <returns></returns>
-        public async Task Run(IBackend<T> backend)
+        public async Task Run()
         {
-            await backend.Run();
+            await Backend.Run(MessageHandler);
         }
 
         /// <summary>
@@ -53,7 +45,7 @@ namespace DiscordBot
             {
                 foreach (var comm in CommandProvider.Commands.Values)
                 {
-                    await comm.OnMessage(e);
+                    await comm.OnRegularMessage(e);
                 }
             }
             

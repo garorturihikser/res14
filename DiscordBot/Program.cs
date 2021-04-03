@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using DiscordBot.Backends;
-using DiscordBot.Backends.CLI;
-using DiscordBot.Backends.Discord;
+using System.Runtime.CompilerServices;
+using DiscordBot.BackendRelated.Discord;
+using DiscordBot.BackendRelated.Twitter;
+using DiscordBot.BackendRelated.CLI;
 using DiscordBot.Config;
 using DSharpPlus.EventArgs;
 using TicTacToe;
-using botCommands = DiscordBot.Commands;
+using Tweetinvi.Core.Extensions;
+using commandHandler = DiscordBot.CommandRelated;
+using botCommands = DiscordBot.CommandRelated.Commands;
 
 namespace DiscordBot
 {
@@ -15,8 +18,9 @@ namespace DiscordBot
         static void Main(string[] args)
         {
             // Discord v CLI
-            var settings = new DiscordSettings();
-
+            var settings = new CLISettings();
+            
+            
             var ticTacToeCommand =
                 new botCommands.TicTacToeCommand(new TicTacToeManager<char>(), settings.TranslationDict);
             
@@ -26,16 +30,26 @@ namespace DiscordBot
                 {new []{"tic", "tac", "toe"}, ticTacToeCommand}
             };
             
-            var configGetter = new JsonConfigGetter("config.json");
+            var configGetter = new JsonConfigGetter(settings.ConfigPath, settings.ConfigType);
             var config = configGetter.GetConfig();
-            var commandProvider = new botCommands.CommandProvider(commands, config.Prefix);
+            var commandProvider = new commandHandler.CommandProvider(commands, config.Prefix);
             
-            var type = typeof(Bot<>).MakeGenericType(settings.BackendType);
-            dynamic bot = Activator.CreateInstance(type, commandProvider, config);
+            object backend;
             
-            var backend = Activator.CreateInstance(settings.Backend, bot);
-
-            bot.Run(backend).ConfigureAwait(false).GetAwaiter().GetResult();
+            // TODO - CHANGE THIS HORRIBLE THING
+            try
+            {
+                backend = Activator.CreateInstance(settings.Backend, config);
+            }
+            catch (Exception e)
+            {
+                backend = Activator.CreateInstance(settings.Backend);
+            }
+            
+            var botType = typeof(Bot<>).MakeGenericType(settings.BackendType);
+            dynamic bot = Activator.CreateInstance(botType, commandProvider, backend, config);
+            
+            bot.Run().ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }
