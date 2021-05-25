@@ -1,44 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using DiscordBot.Commands;
+using DiscordBot.BackendRelated;
+using DiscordBot.CommandRelated;
+using DiscordBot.CommandRelated.Commands;
 using DSharpPlus;
-using DSharpPlus.EventArgs;
 
 namespace DiscordBot
 {
-    class Bot
+    class Bot<T>
     {
-        private string Token { get;}
         private string CommandPrefix { get; set; }
-        private ICommandGetter CommandGetter { get; set; }
-        private DiscordClient DiscordClient { get; }
+        private ICommandProvider CommandProvider { get; set; }
+        public IBackend<T> Backend { get; set; }
         
-        public Bot(ICommandGetter commandGetter, Config.Config config)
+        public Bot(ICommandProvider commandProvider, IBackend<T> backend, Config.DiscordConfig discordConfig)
         {
-            CommandGetter = commandGetter;
-            Token = config.Token;
-            CommandPrefix = config.Prefix;
-            
-            // Instantiate the bot
-            DiscordClient = new DiscordClient(new DiscordConfiguration
-            {
-                Token = Token,
-                TokenType = TokenType.Bot
-            });
+            CommandProvider = commandProvider;
+            Backend = backend;
+            CommandPrefix = discordConfig.Prefix;
         }
-        
+
         /// <summary>
         /// Receives messages and handles them
         /// </summary>
         /// <returns></returns>
         public async Task Run()
         {
-            // We received a message
-            DiscordClient.MessageCreated += MessageHandler;
-            
-            await DiscordClient.ConnectAsync();
-            await Task.Delay(-1);
+            await Backend.Run(MessageHandler);
         }
 
         /// <summary>
@@ -48,21 +36,27 @@ namespace DiscordBot
         /// <returns></returns>
         private bool IsCommand(string content) =>
             content.ToLower().StartsWith(CommandPrefix);
-
-        private async Task MessageHandler(MessageCreateEventArgs e)
+ 
+        public async Task MessageHandler(IContext e)
         {
-            if (!IsCommand(e.Message.Content))
-                return;
-
-            ICommand command = CommandGetter.Get(e.Message);
-
+            ICommand command = CommandProvider.ProvideCommand(e.ExtractMessageContent());
+            
             if (command is null)
             {
-                await e.Message.RespondAsync("Command not recognized :(");
+                foreach (var comm in CommandProvider.Commands.Values)
+                {
+                    await comm.OnRegularMessage(e);
+                }
+            }
+            
+            if (command is null)
+            {
+                if (IsCommand(e.ExtractMessageContent()))
+                    await e.Respond("Command not recognized :(");
                 return;
             }
             
-            await command.Run(e.Message);
+            await command.Run(e);
         }
     }
 }

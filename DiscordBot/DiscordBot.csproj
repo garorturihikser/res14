@@ -10,6 +10,11 @@
     <PackageReference Include="DSharpPlus" Version="3.2.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="TweetinviAPI" Version="5.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TicTacToe\TicTacToe.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿namespace DiscordBot.Config
 {
-    public class Config
+    public class DiscordConfig: IConfig
     {
         public string Token { get; set; }
         public string Prefix { get; set; }
